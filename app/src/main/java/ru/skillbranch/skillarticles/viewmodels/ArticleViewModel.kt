@@ -102,7 +102,7 @@ class ArticleViewModel (private val articleId: String) : BaseViewModel<ArticleSt
     //personal article info
     override fun handleBookmark(){
         val info = currentState.toArticlePersonalInfo()
-        repository.updateArticlePersonalInfo(info.copy(isBookmark = info.isBookmark))
+        repository.updateArticlePersonalInfo(info.copy(isBookmark = !info.isBookmark))
 
         val msg = if (currentState.isBookmark) "Add to bookmarks" else "Remove from bookmarks"
         notify(Notify.TextMessage(msg))
@@ -111,7 +111,6 @@ class ArticleViewModel (private val articleId: String) : BaseViewModel<ArticleSt
 
     override fun handleLike(){
         Log.d("ArticleViewModel", "handle like: ")
-        val isLiked = currentState.isLike
         val toogleLike = {
             val info = currentState.toArticlePersonalInfo()
             repository.updateArticlePersonalInfo(info.copy(isLike = !info.isLike))
@@ -119,7 +118,8 @@ class ArticleViewModel (private val articleId: String) : BaseViewModel<ArticleSt
 
         toogleLike()
 
-        val msg = if(isLiked) Notify.TextMessage("Mark is Liked")
+        val msg = if(currentState.isLike)
+            Notify.TextMessage("Mark is liked")
         else{
             Notify.ActionMessage(
                 "Don`t like it anymore", //message
