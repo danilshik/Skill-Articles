@@ -2,8 +2,13 @@ package ru.skillbranch.skillarticles.ui
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProviders
 import com.google.android.material.snackbar.Snackbar
@@ -19,10 +24,10 @@ import ru.skillbranch.skillarticles.viewmodels.ViewModelFactory
 
 class RootActivity : AppCompatActivity() {
     private lateinit var viewModel: ArticleViewModel
+    private var searchView: SearchView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        toolbar = findViewById(R.id.toolbar)
         setContentView(R.layout.activity_root)
         setupToolbar()
         setupBottomBar()
@@ -32,12 +37,59 @@ class RootActivity : AppCompatActivity() {
         viewModel = ViewModelProviders.of(this, vmFactory).get(ArticleViewModel::class.java)
         viewModel.observeState(this){
             renderUi(it)
-            setupToolbar()
         }
 
         viewModel.observeNotifications(this){
             renderNotification(it)
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        val searchItem = menu?.findItem(R.id.action_search)
+
+        searchView = searchItem?.actionView as SearchView?
+        searchView?.queryHint = "Введите текстовый запрос"
+
+        val textView = searchView?.findViewById<SearchView.SearchAutoComplete>(
+            R.id.search_src_text)
+        textView?.setTextColor(getColor(R.color.color_on_surface))
+
+        if (viewModel.currentState.isSearch) {
+            searchItem?.expandActionView()
+            searchView?.setQuery(viewModel.currentState.searchQuery, false)
+        }
+
+        searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener{
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                viewModel.handleIsSearch(true)
+                viewModel.handleSearchQuery(query)
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                viewModel.handleIsSearch(true)
+                viewModel.handleSearchQuery(newText)
+                return true
+            }
+
+        })
+
+        searchItem?.setOnActionExpandListener(object: MenuItem.OnActionExpandListener {
+            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+                viewModel.handleSearchMode(true)
+                return true
+            }
+
+            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+                viewModel.handleSearchMode(false)
+                return true
+            }
+        })
+
+
+        return super.onCreateOptionsMenu(menu)
+
     }
 
     private fun setupToolbar(){
