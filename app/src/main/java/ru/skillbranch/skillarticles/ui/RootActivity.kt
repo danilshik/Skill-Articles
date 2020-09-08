@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.text.getSpans
+import androidx.core.view.isVisible
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.google.android.material.snackbar.Snackbar
@@ -49,13 +50,13 @@ class RootActivity : BaseActivity<ArticleViewModel>(), IArticleView {
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
-    override val binding: ArticleBinding by lazy { ArticleBinding() }
+    public override val binding: ArticleBinding by lazy { ArticleBinding() }
 
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    private val bgColor by AttrValue(R.attr.colorSecondary)
+    val bgColor by AttrValue(R.attr.colorSecondary)
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    private val fgColor by AttrValue(R.attr.colorOnSecondary)
+    val fgColor by AttrValue(R.attr.colorOnSecondary)
 
 
 
@@ -67,7 +68,7 @@ class RootActivity : BaseActivity<ArticleViewModel>(), IArticleView {
 
     override fun renderSearchResult(searchResult: List<Pair<Int, Int>>) {
         val content = tv_text_content.text as Spannable
-
+        tv_text_content.isVisible
         //clear entry search result
         clearSearchResult()
 
