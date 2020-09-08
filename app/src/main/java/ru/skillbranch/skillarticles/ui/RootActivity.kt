@@ -50,8 +50,8 @@ class RootActivity : BaseActivity<ArticleViewModel>(), IArticleView {
 
 
 
-    private val bgColor by AttrValue(R.attr.colorSecondary)
-    private val fgColor by AttrValue(R.attr.colorOnSecondary)
+    val bgColor by AttrValue(R.attr.colorSecondary)
+    val fgColor by AttrValue(R.attr.colorOnSecondary)
 
 
 
