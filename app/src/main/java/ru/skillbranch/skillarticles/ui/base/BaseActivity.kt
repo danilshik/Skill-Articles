@@ -26,10 +26,6 @@ abstract class BaseActivity<T: BaseViewModel<out IViewModelState>> : AppCompatAc
         viewModel.observeNotifications(this){renderNotification(it)}
     }
 
-    internal inline fun <reified T : ViewModel> provideViewModel(arg : Any?) : ViewModelDelegate<T> {
-        return ViewModelDelegate(T::class.java, arg)
-    }
-
     override fun onSaveInstanceState(outState: Bundle) {
         viewModel.saveState(outState)
         binding.saveUi(outState)
@@ -40,5 +36,9 @@ abstract class BaseActivity<T: BaseViewModel<out IViewModelState>> : AppCompatAc
         super.onRestoreInstanceState(savedInstanceState)
         viewModel.restoreState(savedInstanceState)
         binding.restoreUi(savedInstanceState)
+    }
+
+    internal inline fun <reified T : ViewModel> provideViewModel(arg : Any?) : ViewModelDelegate<T> {
+        return ViewModelDelegate(T::class.java, arg)
     }
 }

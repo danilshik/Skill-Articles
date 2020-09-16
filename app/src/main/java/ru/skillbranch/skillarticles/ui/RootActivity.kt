@@ -26,6 +26,7 @@ import kotlinx.android.synthetic.main.layout_bottombar.*
 import kotlinx.android.synthetic.main.layout_submenu.*
 import kotlinx.android.synthetic.main.search_view_layout.*
 import ru.skillbranch.skillarticles.R
+import ru.skillbranch.skillarticles.data.delegates.PrefDelegate
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
 import ru.skillbranch.skillarticles.extensions.setMarginOptionally
 import ru.skillbranch.skillarticles.ui.base.BaseActivity
@@ -48,6 +49,8 @@ class RootActivity : BaseActivity<ArticleViewModel>(), IArticleView {
         val vmFactory = ViewModelFactory("0")
         ViewModelProviders.of(this, vmFactory).get(ArticleViewModel::class.java)
     }
+
+    val text by PrefDelegate<String>("name")
 
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     public override val binding: ArticleBinding by lazy { ArticleBinding() }
@@ -80,8 +83,7 @@ class RootActivity : BaseActivity<ArticleViewModel>(), IArticleView {
                     SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
             )
         }
-        //scroll to first searched element
-        renderSearchPosition(0)
+
     }
 
     override fun renderSearchPosition(searchPosition: Int) {
@@ -207,11 +209,13 @@ class RootActivity : BaseActivity<ArticleViewModel>(), IArticleView {
 
         btn_result_up.setOnClickListener {
             if(search_view.hasFocus()) search_view.clearFocus()
+            if(!tv_text_content.hasFocus()) tv_text_content.requestFocus()
             viewModel.handleUpResult()
         }
 
         btn_result_down.setOnClickListener {
             if(search_view.hasFocus()) search_view.clearFocus()
+            if(!tv_text_content.hasFocus()) tv_text_content.requestFocus()
             viewModel.handleDownResult()
         }
 
@@ -321,7 +325,7 @@ class RootActivity : BaseActivity<ArticleViewModel>(), IArticleView {
             if(data.title != null) title = data.title
             if(data.category != null) category = data.category
             if(data.categoryIcon != null) categoryIcon = data.categoryIcon as Int
-            if(data.content.isNotEmpty()) content = data.content.first() as String
+            if(data.content != null) content = data.content.first() as String
 
             isLoadingContent = data.isLoadingContent
             isSearch = data.isSearch
