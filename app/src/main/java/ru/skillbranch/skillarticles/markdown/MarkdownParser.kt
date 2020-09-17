@@ -179,6 +179,7 @@ object MarkdownParser {
         }
         return parents
     }
+
 }
 
 data class MarkdownText(val elements: List<Element>)
