@@ -62,7 +62,8 @@ abstract class BaseViewModel<T : IViewModelState>(initState: T) : ViewModel() {
      * реализует данное поведение с помощью EventObserver
      */
     fun observeNotifications(owner: LifecycleOwner, onNotify: (notification: Notify) -> Unit) {
-        notifications.observe(owner, EventObserver { onNotify(it) })
+        notifications.observe(owner,
+            EventObserver { onNotify(it) })
     }
 
     /***
@@ -79,18 +80,16 @@ abstract class BaseViewModel<T : IViewModelState>(initState: T) : ViewModel() {
         }
     }
 
-    fun saveState(outState: Bundle){
+    fun saveState(outState: Bundle) {
         currentState.save(outState)
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun restoreState(savedState: Bundle){
+    fun restoreState(savedState: Bundle) {
         state.value = currentState.restore(savedState) as T
     }
 
 }
-
-
 
 class Event<out E>(private val content: E) {
     var hasBeenHandled = false
