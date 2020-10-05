@@ -1,4 +1,4 @@
-package ru.skillbranch.skillarticles.markdown.spans
+package ru.skillbranch.skillarticles.ui.custom.spans
 
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -7,17 +7,14 @@ import android.text.style.LeadingMarginSpan
 import androidx.annotation.ColorInt
 import androidx.annotation.Px
 
-class UnorderedListSpan(
-    @Px
-    private val gapWidth: Float,
-    @Px
-    private val bulletRadius: Float,
-    @ColorInt
-    private val bulletColor: Int
+class BlockquotesSpan(
+    @Px private val gapWidth: Float,
+    @Px private val quoteWidth: Float,
+    @ColorInt private val lineColor: Int
 ) : LeadingMarginSpan {
 
     override fun getLeadingMargin(first: Boolean): Int {
-        return (4*bulletRadius +gapWidth).toInt()
+        return (quoteWidth + gapWidth).toInt()
     }
 
     override fun drawLeadingMargin(
@@ -25,24 +22,29 @@ class UnorderedListSpan(
         lineTop: Int, lineBaseline: Int, lineBottom: Int, text: CharSequence?, lineStart: Int,
         lineEnd: Int, isFirstLine: Boolean, layout: Layout?
     ) {
-        if(isFirstLine) {
-            paint.withCustomColor {
-                canvas.drawCircle(
-                    gapWidth + currentMarginLocation + bulletRadius,
-                    (lineTop + lineBottom)/2f,
-                    bulletRadius,
-                    paint)
-            }
+        paint.withCustomColor {
+            canvas.drawLine(
+                quoteWidth/2f,
+                lineTop.toFloat(),
+                quoteWidth/2f,
+                lineBottom.toFloat(),
+                paint
+            )
         }
     }
 
     private inline fun Paint.withCustomColor(block: () -> Unit) {
         val oldColor = color
         val oldStyle = style
-        color = bulletColor
-        style = Paint.Style.FILL
+        val oldWidth = strokeWidth
+
+        color = lineColor
+        style = Paint.Style.STROKE // просто линия
+        strokeWidth = quoteWidth
+
         block()
 
+        strokeWidth = oldWidth
         color = oldColor
         style = oldStyle
     }

@@ -1,4 +1,4 @@
-package ru.skillbranch.skillarticles.markdown.spans
+package ru.skillbranch.skillarticles.ui.custom.spans
 
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -6,12 +6,12 @@ import android.text.style.ReplacementSpan
 import androidx.annotation.ColorInt
 import androidx.annotation.Px
 
+
 class HorizontalRuleSpan(
-    @Px
-    val ruleWidth: Float,
-    @ColorInt
-    val ruleColor: Int
+    @Px val ruleWidth: Float,
+    @ColorInt val ruleColor: Int
 ) : ReplacementSpan() {
+
     override fun getSize(
         paint: Paint,
         text: CharSequence?,
@@ -33,15 +33,16 @@ class HorizontalRuleSpan(
         bottom: Int,
         paint: Paint
     ) {
-        paint.forLine{
+        paint.forLine {
             canvas.drawLine(
                 0f,
-                (top + bottom) / 2f,
+                (top + bottom)/2f,
                 canvas.width.toFloat(),
-                (top + bottom) / 2f,
+                (top + bottom)/2f,
                 paint
             )
         }
+
     }
 
     private inline fun Paint.forLine(block: () -> Unit) {

@@ -24,9 +24,14 @@ fun Context.dpToIntPx(dp: Int): Int {
     ).toInt()
 }
 
-fun Context.attrValue(@AttrRes attr: Int, typedValue: TypedValue = TypedValue()) : Int {
-    theme.resolveAttribute(attr, typedValue, true)
-    return typedValue.data
+fun Context.attrValue(@AttrRes id: Int): Int {
+    val value = TypedValue()
+    if (theme.resolveAttribute(id, value, true)) {
+        value.data
+        return value.data
+    } else {
+        error("can not attribute for : $id")
+    }
 }
 
 val Context.isNetworkAvailable: Boolean

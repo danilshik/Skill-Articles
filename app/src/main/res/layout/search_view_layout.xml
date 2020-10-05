@@ -1,6 +1,9 @@
 <androidx.appcompat.widget.SearchView
-    android:id="@+id/search_view"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:maxWidth="999999dp"
-    xmlns:android="http://schemas.android.com/apk/res/android" />
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/search_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:maxWidth="9999dp">
+
+</androidx.appcompat.widget.SearchView>
