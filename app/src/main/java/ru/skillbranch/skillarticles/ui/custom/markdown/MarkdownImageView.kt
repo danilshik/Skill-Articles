@@ -49,12 +49,9 @@ class MarkdownImageView private constructor(
     private lateinit var imageUrl: String
     private lateinit var imageTitle: CharSequence
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val iv_image: ImageView
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val tv_title: MarkdownTextView
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    var tv_alt: TextView? = null
+    private val iv_image: ImageView
+    private val tv_title: MarkdownTextView
+    private var tv_alt: TextView? = null
 
     @Px
     private val titleTopMargin: Int = context.dpToIntPx(8)
@@ -79,6 +76,7 @@ class MarkdownImageView private constructor(
     }
 
     private var isOpen = false
+    private var aspectRatio = 0f
 
     init {
         layoutParams = LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
@@ -141,14 +139,21 @@ class MarkdownImageView private constructor(
         }
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
-    public override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         var usedHeight = 0
         val width = View.getDefaultSize(suggestedMinimumWidth, widthMeasureSpec)
 
         //create measureSpec for children EXACTLY
         //all children width == parent width (constraint parent width)
         val ms = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY)
+
+        if (aspectRatio != 0f) {
+            // Restore width/height by aspect ration
+            val hms = MeasureSpec.makeMeasureSpec((width / aspectRatio).toInt(), MeasureSpec.EXACTLY)
+            iv_image.measure(ms, hms)
+        } else {
+            iv_image.measure(ms, heightMeasureSpec)
+        }
 
         iv_image.measure(ms, heightMeasureSpec)
         tv_title.measure(ms, heightMeasureSpec)
@@ -162,8 +167,16 @@ class MarkdownImageView private constructor(
         setMeasuredDimension(width, usedHeight)
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
-    public override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        Glide
+            .with(context)
+            .load(imageUrl)
+            .transform(AspectRatioResizeTransform())
+            .into(iv_image)
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         var usedHeight = 0
         val bodyWidth = r - l - paddingLeft - paddingRight
         val left = paddingLeft
@@ -193,8 +206,7 @@ class MarkdownImageView private constructor(
         )
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
-    public override fun dispatchDraw(canvas: Canvas) {
+    override fun dispatchDraw(canvas: Canvas) {
         super.dispatchDraw(canvas)
         canvas.drawLine(
             0f,
@@ -204,8 +216,6 @@ class MarkdownImageView private constructor(
             linePaint
         )
 
-        val l = canvas.width - titlePadding.toFloat()
-        val r = canvas.width.toFloat()
         canvas.drawLine(
             canvas.width - titlePadding.toFloat(),
             linePositionY,
@@ -244,6 +254,7 @@ class MarkdownImageView private constructor(
     override fun onSaveInstanceState(): Parcelable? {
         val savedState = SavedState(super.onSaveInstanceState())
         savedState.ssIsOpen = isOpen
+        savedState.ssAspectRatio = (iv_image.width.toFloat() / iv_image.height)
         return savedState
     }
 
@@ -251,12 +262,14 @@ class MarkdownImageView private constructor(
         super.onRestoreInstanceState(state)
         if (state is SavedState) {
             isOpen = state.ssIsOpen
+            aspectRatio = state.ssAspectRatio
             tv_alt?.isVisible = isOpen
         }
     }
 
     private class SavedState : BaseSavedState, Parcelable {
         var ssIsOpen: Boolean = false
+        var ssAspectRatio: Float = 0f
 
         constructor(superState: Parcelable?) : super(superState)
 
