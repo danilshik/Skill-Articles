@@ -20,52 +20,53 @@ import ru.skillbranch.skillarticles.extensions.dpToIntPx
 import ru.skillbranch.skillarticles.extensions.format
 import kotlin.math.max
 
-@Suppress("PropertyName")
-class ArticleItemView constructor(context: Context) : ViewGroup(context), LayoutContainer {
-    override val containerView = this
+class ArticleItemView constructor(
+    context: Context
+) : ViewGroup(context, null, 0), LayoutContainer {
+    override val containerView: View = this
 
-    val tv_date: TextView
-    val tv_author: TextView
-    val tv_title: TextView
-    val iv_poster: ImageView
-    val iv_category: ImageView
-    val tv_description: TextView
-    val iv_likes: ImageView
-    val tv_likes_count: TextView
-    val iv_comments: ImageView
-    val tv_comments_count: TextView
-    val tv_read_duration: TextView
-    val iv_bookmark: ImageView
+    private val iv_poster: ImageView
+    private val iv_category: ImageView
+    private val iv_likes: ImageView
+    private val iv_comments: ImageView
+    private val iv_bookmark: ImageView
+    private val tv_date: TextView
+    private val tv_author: TextView
+    private val tv_title: TextView
+    private val tv_description: TextView
+    private val tv_likes_count: TextView
+    private val tv_comments_count: TextView
+    private val tv_read_duration: TextView
 
-    val padding = context.dpToIntPx(16)
-    val defaultMargin = context.dpToIntPx(8)
-    val posterSize = context.dpToIntPx(64)
-    val categorySize = context.dpToIntPx(40)
-    val iconSize = context.dpToIntPx(16)
-    val grayColor = context.getColor(R.color.color_gray)
-    val primaryColor = context.attrValue(R.attr.colorPrimary)
+    private val defaultPadding = context.dpToIntPx(16)
+    private val defaultSpace = context.dpToIntPx(8)
+    private val cornerRadius = context.dpToIntPx(8)
+    private val categorySize = context.dpToIntPx(40)
+    private val posterSize = context.dpToIntPx(64)
+    private val iconSize = context.dpToIntPx(16)
+    private val grayColor = context.getColor(R.color.color_gray)
+    private val primaryColor = context.attrValue(R.attr.colorPrimary)
 
     init {
-        this.setPadding(padding)
-
+        setPadding(defaultPadding)
         tv_date = TextView(context).apply {
             id = R.id.tv_date
-            textSize = 12f
             setTextColor(grayColor)
+            textSize = 12f
         }
         addView(tv_date)
 
         tv_author = TextView(context).apply {
             id = R.id.tv_author
-            textSize = 12f
             setTextColor(primaryColor)
+            textSize = 12f
         }
         addView(tv_author)
 
         tv_title = TextView(context).apply {
             id = R.id.tv_title
+            setTextColor(context.attrValue(R.attr.colorPrimary))
             textSize = 18f
-            setTextColor(primaryColor)
             setTypeface(typeface, Typeface.BOLD)
         }
         addView(tv_title)
@@ -77,15 +78,15 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
         addView(iv_poster)
 
         iv_category = ImageView(context).apply {
-            id = R.id.iv_category
+            id = R.id.tv_author
             layoutParams = LayoutParams(categorySize, categorySize)
         }
         addView(iv_category)
 
         tv_description = TextView(context).apply {
             id = R.id.tv_description
-            textSize = 14f
             setTextColor(grayColor)
+            textSize = 14f
         }
         addView(tv_description)
 
@@ -98,8 +99,8 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
         addView(iv_likes)
 
         tv_likes_count = TextView(context).apply {
-            textSize = 12f
             setTextColor(grayColor)
+            textSize = 12f
         }
         addView(tv_likes_count)
 
@@ -111,15 +112,15 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
         addView(iv_comments)
 
         tv_comments_count = TextView(context).apply {
-            textSize = 12f
             setTextColor(grayColor)
+            textSize = 12f
         }
         addView(tv_comments_count)
 
         tv_read_duration = TextView(context).apply {
             id = R.id.tv_read_duration
-            textSize = 12f
             setTextColor(grayColor)
+            textSize = 12f
         }
         addView(tv_read_duration)
 
@@ -132,92 +133,207 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        var currentHeight = paddingTop
-        val width = View.getDefaultSize(suggestedMinimumWidth, widthMeasureSpec)
+        var usedHeight = paddingTop
+        val width = getDefaultSize(suggestedMinimumWidth, widthMeasureSpec)
 
-        // date + author
         measureChild(tv_date, widthMeasureSpec, heightMeasureSpec)
-        tv_author.maxWidth = width - (tv_date.measuredWidth + 3 * padding)
+        tv_author.maxWidth = width - (tv_date.measuredWidth + 3 * defaultPadding)
         measureChild(tv_author, widthMeasureSpec, heightMeasureSpec)
-        currentHeight += tv_author.measuredHeight
+        usedHeight += tv_author.measuredHeight
 
-        // title block
-        val titleHeight = posterSize + categorySize / 2
-        tv_title.maxWidth = width - (titleHeight + 2 * paddingLeft + defaultMargin)
+        //title row
+        val rh = posterSize + categorySize / 2
+        tv_title.maxWidth = width - (rh + 2 * paddingLeft + defaultSpace)
         measureChild(tv_title, widthMeasureSpec, heightMeasureSpec)
-        currentHeight += max(tv_title.measuredHeight, titleHeight) + 2 * defaultMargin
+        usedHeight += max(tv_title.measuredHeight, rh) + 2 * defaultSpace
 
-        // description block
+        //description row
         measureChild(tv_description, widthMeasureSpec, heightMeasureSpec)
-        currentHeight += tv_description.measuredHeight + 2 * defaultMargin
+        usedHeight += tv_description.measuredHeight + defaultSpace
 
-        // icons block
+        //icon row
         measureChild(tv_likes_count, widthMeasureSpec, heightMeasureSpec)
         measureChild(tv_comments_count, widthMeasureSpec, heightMeasureSpec)
         measureChild(tv_read_duration, widthMeasureSpec, heightMeasureSpec)
 
-        currentHeight += iconSize + paddingBottom
-        setMeasuredDimension(width, currentHeight)
+        usedHeight += iconSize + paddingBottom
+        setMeasuredDimension(width, usedHeight)
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        var currentHeight = paddingTop
-        var paddingLeft = getPaddingLeft()
+        Log.e("MarkdownContentView", "onLayout: ")
+        var usedHeight = paddingTop
         val bodyWidth = right - left - paddingLeft - paddingRight
-        Log.e("ArticleItemView", "bodyWidth = $bodyWidth")
+        Log.e("ArticleItemView", "bodyWidth: $bodyWidth")
+        var left = paddingLeft
 
-        // author + date
-        tv_date.layout(paddingLeft, currentHeight, paddingLeft + tv_date.measuredWidth, currentHeight + tv_date.measuredHeight)
-        paddingLeft += tv_date.right + padding
-        tv_author.layout(paddingLeft, currentHeight, paddingLeft + tv_author.measuredWidth, currentHeight + tv_author.measuredHeight)
-        currentHeight += tv_author.measuredHeight + defaultMargin
-        paddingLeft = getPaddingLeft()
+        tv_date.layout(
+            left,
+            usedHeight,
+            left + tv_date.measuredWidth,
+            usedHeight + tv_date.measuredHeight
+        )
 
-        // title block
-        val titleHeight = posterSize + categorySize / 2
-        if (titleHeight > tv_title.measuredHeight) {
-            val diffH = (titleHeight - tv_title.measuredHeight) / 2
-            tv_title.layout(paddingLeft, currentHeight + diffH, paddingLeft + tv_title.measuredWidth, currentHeight + diffH + tv_title.measuredHeight)
-            paddingLeft = padding
-            iv_poster.layout(paddingLeft + bodyWidth - posterSize, currentHeight, paddingLeft + bodyWidth, currentHeight + posterSize)
-            iv_category.layout(iv_poster.left - categorySize / 2, iv_poster.bottom - categorySize / 2, iv_poster.left + categorySize / 2, iv_poster.bottom + categorySize / 2)
-            currentHeight += titleHeight
+        left = tv_date.right + defaultPadding
+
+        tv_author.layout(
+            left,
+            usedHeight,
+            left + tv_author.measuredWidth,
+            usedHeight + tv_author.measuredHeight
+        )
+
+        usedHeight += tv_author.measuredHeight + defaultSpace
+        left = paddingLeft
+
+        val rh = posterSize + categorySize / 2
+
+        if (rh > tv_title.measuredHeight) {
+            val diffH = (rh - tv_title.measuredHeight) / 2
+            Log.e("ArticleItemView", "diff $diffH : $usedHeight $rh ${tv_title.measuredHeight}")
+
+            tv_title.layout(
+                left,
+                usedHeight + diffH,
+                left + tv_title.measuredWidth,
+                usedHeight + diffH + tv_title.measuredHeight
+            )
+
+            left = defaultPadding
+
+            iv_poster.layout(
+                left + bodyWidth - posterSize,
+                usedHeight,
+                left + bodyWidth,
+                usedHeight + posterSize
+            )
+
+            iv_category.layout(
+                iv_poster.left - categorySize / 2,
+                iv_poster.bottom - categorySize / 2,
+                iv_poster.left + categorySize / 2,
+                iv_poster.bottom + categorySize / 2
+            )
+
+            usedHeight += rh
         } else {
-            val diffH = (tv_title.measuredHeight - titleHeight) / 2
-            tv_title.layout(left, currentHeight, left + tv_title.measuredWidth, currentHeight + tv_title.measuredHeight)
-            iv_poster.layout(left + bodyWidth - posterSize, currentHeight + diffH, left + bodyWidth, currentHeight + diffH + posterSize)
-            iv_category.layout(iv_poster.left - categorySize / 2, iv_poster.bottom - categorySize / 2, iv_poster.left + categorySize / 2, iv_poster.bottom + categorySize / 2)
-            currentHeight += tv_title.measuredHeight
+            val diffH = (tv_title.measuredHeight - rh) / 2
+            Log.e("ArticleItemView", "diff $diffH : $usedHeight ${tv_title.measuredHeight} $rh")
+
+            tv_title.layout(
+                left,
+                usedHeight,
+                left + tv_title.measuredWidth,
+                usedHeight + tv_title.measuredHeight
+            )
+
+            iv_poster.layout(
+                left + bodyWidth - posterSize,
+                usedHeight + diffH,
+                left + bodyWidth,
+                usedHeight + diffH + posterSize
+            )
+
+            iv_category.layout(
+                iv_poster.left - categorySize / 2,
+                iv_poster.bottom - categorySize / 2,
+                iv_poster.left + categorySize / 2,
+                iv_poster.bottom + categorySize / 2
+            )
+
+            usedHeight += tv_title.measuredHeight
         }
-        paddingLeft = padding
-        currentHeight += defaultMargin
 
-        // description
-        tv_description.layout(paddingLeft, currentHeight, paddingLeft + bodyWidth, currentHeight + tv_description.measuredHeight)
-        currentHeight += tv_description.measuredHeight + defaultMargin
+        left = defaultPadding
+        usedHeight += defaultSpace
 
-        // icons block
+        tv_description.layout(
+            left,
+            usedHeight,
+            left + bodyWidth,
+            usedHeight + tv_description.measuredHeight
+        )
+
+        usedHeight += tv_description.measuredHeight + defaultSpace
+
         val fontDiff = iconSize - tv_likes_count.measuredHeight
-        iv_likes.layout(paddingLeft, currentHeight - fontDiff, paddingLeft + iconSize, currentHeight + iconSize - fontDiff)
-        paddingLeft = iv_likes.right + defaultMargin
+        Log.e("ArticleItemView", "fontDiff: $fontDiff")
 
-        tv_likes_count.layout(paddingLeft, currentHeight, paddingLeft + tv_likes_count.measuredWidth, currentHeight + tv_likes_count.measuredHeight)
-        paddingLeft = tv_likes_count.right + padding
+        iv_likes.layout(
+            left,
+            usedHeight - fontDiff,
+            left + iconSize,
+            usedHeight + iconSize - fontDiff
+        )
 
-        iv_comments.layout(paddingLeft, currentHeight - fontDiff, paddingLeft + iconSize, currentHeight + iconSize - fontDiff)
-        paddingLeft = iv_comments.right + defaultMargin
+        left = iv_likes.right + defaultSpace
 
-        tv_comments_count.layout(paddingLeft, currentHeight, paddingLeft + tv_comments_count.measuredWidth, currentHeight + tv_comments_count.measuredHeight)
-        paddingLeft = tv_comments_count.right + padding
+        tv_likes_count.layout(
+            left,
+            usedHeight,
+            left + tv_likes_count.measuredWidth,
+            usedHeight + tv_likes_count.measuredHeight
+        )
 
-        tv_read_duration.layout(paddingLeft, currentHeight, paddingLeft + tv_read_duration.measuredWidth, currentHeight + tv_read_duration.measuredHeight)
-        paddingLeft = padding
+        left = tv_likes_count.right + defaultPadding
 
-        iv_bookmark.layout(paddingLeft + bodyWidth - iconSize, currentHeight - fontDiff, paddingLeft + bodyWidth, currentHeight + iconSize - fontDiff)
+        iv_comments.layout(
+            left,
+            usedHeight - fontDiff,
+            left + iconSize,
+            usedHeight + iconSize - fontDiff
+        )
+
+        left = iv_comments.right + defaultSpace
+
+        tv_comments_count.layout(
+            left,
+            usedHeight,
+            left + tv_comments_count.measuredWidth,
+            usedHeight + tv_comments_count.measuredHeight
+        )
+
+        left = tv_comments_count.right + defaultPadding
+
+        tv_read_duration.layout(
+            left,
+            usedHeight,
+            left + tv_read_duration.measuredWidth,
+            usedHeight + tv_read_duration.measuredHeight
+        )
+
+        left = defaultPadding
+
+        iv_bookmark.layout(
+            left + bodyWidth - iconSize,
+            usedHeight - fontDiff,
+            left + bodyWidth,
+            usedHeight + iconSize - fontDiff
+        )
+        /*children.forEach {
+            if (it is MarkdownTextView) {
+                it.layout(
+                    left - paddingLeft / 2,
+                    usedHeight,
+                    r - paddingRight / 2,
+                    usedHeight + it.measuredHeight
+                )
+            } else {
+                it.layout(
+                    left,
+                    usedHeight,
+                    right,
+                    usedHeight + it.measuredHeight
+                )
+            }
+            usedHeight += it.measuredHeight
+        }*/
     }
 
     fun bind(item: ArticleItemData) {
-        val cornerRadius = context.dpToIntPx(8)
+        tv_date.text = item.date.format()
+        tv_author.text = item.author
+        tv_title.text = item.title
 
         Glide.with(context)
             .load(item.poster)
@@ -231,12 +347,9 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
             .override(categorySize)
             .into(iv_category)
 
-        tv_date.text = item.date.format()
-        tv_author.text = item.author
-        tv_title.text = item.title
         tv_description.text = item.description
-        tv_likes_count.text = item.likeCount.toString()
-        tv_comments_count.text = item.commentCount.toString()
+        tv_likes_count.text = "${item.likeCount}"
+        tv_comments_count.text = "${item.commentCount}"
         tv_read_duration.text = "${item.readDuration} min read"
     }
 }
