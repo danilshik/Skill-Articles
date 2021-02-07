@@ -1,27 +1,45 @@
 package ru.skillbranch.skillarticles.viewmodels.article
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.SavedStateHandle
-import ru.skillbranch.skillarticles.data.ArticleData
-import ru.skillbranch.skillarticles.data.ArticlePersonalInfo
+import androidx.lifecycle.*
+import androidx.paging.LivePagedListBuilder
+import androidx.paging.PagedList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import ru.skillbranch.skillarticles.data.models.ArticleData
+import ru.skillbranch.skillarticles.data.models.ArticlePersonalInfo
+import ru.skillbranch.skillarticles.data.models.CommentItemData
 import ru.skillbranch.skillarticles.data.repositories.ArticleRepository
+import ru.skillbranch.skillarticles.data.repositories.CommentsDataFactory
 import ru.skillbranch.skillarticles.data.repositories.MarkdownElement
 import ru.skillbranch.skillarticles.extensions.data.toAppSettings
 import ru.skillbranch.skillarticles.extensions.data.toArticlePersonalInfo
-import ru.skillbranch.skillarticles.extensions.format
 import ru.skillbranch.skillarticles.extensions.indexesOf
 import ru.skillbranch.skillarticles.data.repositories.clearContent
+import ru.skillbranch.skillarticles.extensions.format
 import ru.skillbranch.skillarticles.viewmodels.base.BaseViewModel
 import ru.skillbranch.skillarticles.viewmodels.base.IViewModelState
 import ru.skillbranch.skillarticles.viewmodels.base.NavigationCommand
 import ru.skillbranch.skillarticles.viewmodels.base.Notify
+import java.util.concurrent.Executors
 
 class ArticleViewModel(
     handle: SavedStateHandle,
     private val articleId: String
 ) : BaseViewModel<ArticleState>(handle, ArticleState()), IArticleViewModel {
+
     private val repository = ArticleRepository
     private var clearContent: String? = null
+    private val listConfig by lazy {
+        PagedList.Config.Builder()
+            .setEnablePlaceholders(true)
+            .setPageSize(5)
+            .build()
+    }
+
+    private val listData: LiveData<PagedList<CommentItemData>> = Transformations.switchMap(getArticleData()) {
+        buildPagedList(repository.allComments(articleId, it?.commentCount ?: 0))
+    }
 
     init {
         subscribeOnDataSource(getArticleData()) { article, articleState ->
@@ -108,15 +126,11 @@ class ArticleViewModel(
     }
 
     override fun handleBookmark() {
-        val toggleBookmark = {
-            val info = currentState.toArticlePersonalInfo()
-            repository.updateArticlePersonalInfo(info.copy(isBookmark = !info.isBookmark))
-        }
+        val info = currentState.toArticlePersonalInfo()
+        repository.updateArticlePersonalInfo(info.copy(isBookmark = !info.isBookmark))
 
-        toggleBookmark()
-
-        val notify = if (currentState.isBookmark) Notify.TextMessage("Add to bookmarks") else Notify.TextMessage("Remove from bookmarks")
-        notify(notify)
+        val msg = if (currentState.isBookmark) "Add to bookmarks" else "Remove from bookmarks"
+        notify(Notify.TextMessage(msg))
     }
 
     override fun handleShare() {
@@ -151,10 +165,49 @@ class ArticleViewModel(
         notify(Notify.TextMessage("Code copy to clipboard"))
     }
 
-    fun handleSendComment() {
-        if (!currentState.isAuth) navigate(NavigationCommand.StartLogin())
-        // TODO — Send comment
+    fun handleSendComment(comment: String?) {
+        updateState { it.copy(comment = comment) }
+
+        if (comment.isNullOrBlank()) {
+            notify(Notify.TextMessage("Comment must not be empty"))
+            return
+        }
+
+        if (!currentState.isAuth) {
+            navigate(NavigationCommand.StartLogin())
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.sendComment(articleId, comment, currentState.answerToSlug)
+            withContext(Dispatchers.Main) {
+                updateState { it.copy(answerTo = null, answerToSlug = null, comment = null) }
+            }
+        }
     }
+
+    fun observeList(owner: LifecycleOwner, onChanged: (list: PagedList<CommentItemData>) -> Unit) {
+        listData.observe(owner, Observer { onChanged(it) })
+    }
+
+    private fun buildPagedList(dataFactory: CommentsDataFactory): LiveData<PagedList<CommentItemData>> {
+        return LivePagedListBuilder<String, CommentItemData>(dataFactory, listConfig)
+            .setFetchExecutor(Executors.newSingleThreadExecutor())
+            .build()
+    }
+
+    fun handleCommentFocus(hasFocus: Boolean) {
+        updateState { it.copy(showBottomBar = !hasFocus) }
+    }
+
+    fun handleClearComment() {
+        updateState { it.copy(answerTo = null, answerToSlug = null) }
+    }
+
+    fun handleReplyTo(slug: String, name: String) {
+        updateState { it.copy(answerToSlug = slug, answerTo = "Reply to $name") }
+    }
+
 }
 
 data class ArticleState(
@@ -178,7 +231,11 @@ data class ArticleState(
     val author: Any? = null,
     val poster: String? = null,
     val content: List<MarkdownElement> = emptyList(),
-    val reviews: List<Any> = emptyList()
+    val commentsCount: Int = 0,
+    val answerTo: String? = null,
+    val answerToSlug: String? = null,
+    val showBottomBar: Boolean = true,
+    val comment: String? = null
 ): IViewModelState {
     override fun save(outState: SavedStateHandle) {
         outState.set("isSearch", isSearch)
