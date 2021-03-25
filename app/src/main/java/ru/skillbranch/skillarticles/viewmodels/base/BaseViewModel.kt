@@ -8,10 +8,7 @@ import androidx.navigation.NavOptions
 import androidx.navigation.Navigator
 
 abstract class BaseViewModel<T : IViewModelState>(private val handleState: SavedStateHandle, initState: T) : ViewModel() {
-    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
-    val notifications = MutableLiveData<Event<Notify>>()
-
-    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
+    private val notifications = MutableLiveData<Event<Notify>>()
     val navigation = MutableLiveData<Event<NavigationCommand>>()
 
     /***
@@ -19,7 +16,6 @@ abstract class BaseViewModel<T : IViewModelState>(private val handleState: Saved
      * MediatorLiveData - медиатор исспользуется для того чтобы учитывать изменяемые данные модели
      * и обновлять состояние ViewModel исходя из полученных данных
      */
-    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     val state: MediatorLiveData<T> = MediatorLiveData<T>().apply {
         value = initState
     }
@@ -27,7 +23,6 @@ abstract class BaseViewModel<T : IViewModelState>(private val handleState: Saved
     /***
      * getter для получения not null значения текущего состояния ViewModel
      */
-    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     val currentState
         get() = state.value!!
 
@@ -96,8 +91,10 @@ abstract class BaseViewModel<T : IViewModelState>(private val handleState: Saved
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun restoreState(){
-        state.value = currentState.restore(handleState) as T
+    fun restoreState() {
+        val restoredState = currentState.restore(handleState) as T
+        if (currentState == restoredState) return
+        state.value = restoredState
     }
 
 }
