@@ -1,9 +1,7 @@
 package ru.skillbranch.skillarticles.ui.articles
 
-import android.content.res.ColorStateList
 import android.database.Cursor
 import android.database.MatrixCursor
-import android.graphics.Color
 import android.os.Bundle
 import android.provider.BaseColumns
 import android.view.Menu
@@ -28,6 +26,7 @@ import ru.skillbranch.skillarticles.ui.base.Binding
 import ru.skillbranch.skillarticles.ui.base.MenuItemHolder
 import ru.skillbranch.skillarticles.ui.base.ToolbarBuilder
 import ru.skillbranch.skillarticles.ui.delegates.RenderProp
+import ru.skillbranch.skillarticles.ui.dialogs.ChoseCategoryDialog
 import ru.skillbranch.skillarticles.viewmodels.articles.ArticlesState
 import ru.skillbranch.skillarticles.viewmodels.articles.ArticlesViewModel
 import ru.skillbranch.skillarticles.viewmodels.base.IViewModelState
@@ -90,6 +89,11 @@ class ArticlesFragment : BaseFragment<ArticlesViewModel>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        setFragmentResultListener(ChoseCategoryDialog.CHOOSE_CATEGORY_KEY) { _, bundle ->
+            @Suppress("UNCHECKED_CAST")
+            viewModel.applyCategories(bundle.getStringArrayList(ChoseCategoryDialog.SELECTED_CATEGORIES)!!.toList())
+        }
 
         suggestionsAdapter = SimpleCursorAdapter(
             context,
