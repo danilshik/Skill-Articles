@@ -1,66 +1,76 @@
 package ru.skillbranch.sbdelivery.repository
 
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.schedulers.Schedulers
-import ru.skillbranch.sbdelivery.domain.entity.DishEntity
-import ru.skillbranch.sbdelivery.repository.database.dao.DishesDao
-import ru.skillbranch.sbdelivery.repository.database.entity.DishPersistEntity
-import ru.skillbranch.sbdelivery.repository.http.DeliveryApi
-import ru.skillbranch.sbdelivery.repository.http.client.DeliveryRetrofitProvider
-import ru.skillbranch.sbdelivery.repository.mapper.DishesMapper
-import ru.skillbranch.sbdelivery.repository.models.Category
-import ru.skillbranch.sbdelivery.repository.models.Dish
-import ru.skillbranch.sbdelivery.repository.models.RefreshToken
+import ru.skillbranch.sbdelivery.data.db.dao.CartDao
+import ru.skillbranch.sbdelivery.data.db.dao.DishesDao
+import ru.skillbranch.sbdelivery.data.db.entity.CartItemPersist
+import ru.skillbranch.sbdelivery.data.network.RestService
+import ru.skillbranch.sbdelivery.data.network.res.DishRes
+import ru.skillbranch.sbdelivery.data.toDishItem
+import ru.skillbranch.sbdelivery.data.toDishPersist
+import ru.skillbranch.sbdelivery.screens.dishes.data.DishItem
+import java.util.*
+import javax.inject.Inject
 
-class DishesRepository(
-    private val api: DeliveryApi,
-    private val mapper: DishesMapper,
-    private val dishesDao: DishesDao
-) : DishesRepositoryContract {
+interface IDishesRepository {
+    suspend fun searchDishes(query: String): List<DishItem>
+    suspend fun isEmptyDishes(): Boolean
+    suspend fun syncDishes()
+    suspend fun findDishes(): List<DishItem>
+    suspend fun findSuggestions(query: String): Map<String, Int>
+    suspend fun addDishToCart(dishId: String)
+    suspend fun removeDishFromCart(dishId: String)
+    suspend fun cartCount(): Int
+}
 
-    override fun getDishes(): Single<List<DishEntity>> =
-        api.refreshToken(RefreshToken(DeliveryRetrofitProvider.REFRESH_TOKEN))
-            .flatMap {
-                api.getDishes(
-                    0,
-                    1000,
-                    "${DeliveryRetrofitProvider.BEARER} ${it.accessToken}"
-                )
-            }
-            .doOnSuccess { dishes: List<Dish> ->
-                val savePersistDishes: List<DishPersistEntity> = mapper.mapDtoToPersist(dishes)
-                dishesDao.insertDishes(savePersistDishes)
-            }
-            .map { mapper.mapDtoToEntity(it) }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-
-
-    override fun getCachedDishes(): Single<List<DishEntity>> {
-        return dishesDao.getAllDishes().map { mapper.mapPersistToEntity(it) }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
+class DishesRepository @Inject constructor(
+    private val api: RestService,
+    private val dishesDao: DishesDao,
+    private val cartDao: CartDao
+) : IDishesRepository {
+    override suspend fun searchDishes(query: String): List<DishItem> {
+        return if (query.isEmpty()) findDishes()
+        else dishesDao.findDishesFrom(query)
+            .map { it.toDishItem() }
     }
 
-    override fun getCategories(): Single<List<Category>> {
-        return api.refreshToken(RefreshToken(DeliveryRetrofitProvider.REFRESH_TOKEN))
-            .flatMap {
-                api.getCategories(
-                    0,
-                    1000,
-                    "${DeliveryRetrofitProvider.BEARER} ${it.accessToken}"
-                )
-            }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
+    override suspend fun isEmptyDishes(): Boolean = dishesDao.dishesCounts() == 0
+
+    override suspend fun syncDishes() {
+        val dishes = mutableListOf<DishRes>()
+        var offset = 0
+        while (true) {
+            val res = api.getDishes(offset * 10, 10)
+            if (res.isSuccessful) {
+                offset++
+                dishes.addAll(res.body()!!)
+            } else break
+        }
+        dishesDao.insertDishes(dishes.map { it.toDishPersist() })
     }
 
-    override fun findDishesByName(searchText: String): Observable<List<DishEntity>> {
-        return dishesDao.findDishesByName(searchText).map { mapper.mapPersistToEntity(it) }
-            .toObservable()
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
+    override suspend fun findDishes(): List<DishItem> =
+        dishesDao.findAllDishes().map { it.toDishItem() }
+
+    override suspend fun findSuggestions(query: String): Map<String, Int> {
+        val dishesList = searchDishes(query)
+        return dishesList
+            .map{ it.title.replace("[.,!?\"-]".toRegex(), "").lowercase(Locale.getDefault()).split(" ")}
+            .flatten().
+            filter { it.contains(query, true) }
+            .groupingBy { it }.eachCount()
     }
+
+    override suspend fun addDishToCart(dishId: String) {
+        val count = cartDao.dishCount(dishId) ?: 0
+        if (count > 0) cartDao.updateItemCount(dishId, count.inc())
+        else cartDao.addItem(CartItemPersist(dishId = dishId))
+    }
+
+    override suspend fun removeDishFromCart(dishId: String) {
+        val count = cartDao.dishCount(dishId) ?: 0
+        if (count > 0) cartDao.decrementItemCount(dishId)
+        else cartDao.removeItem(dishId)
+    }
+
+    override suspend fun cartCount(): Int = cartDao.cartCount() ?: 0
 }
