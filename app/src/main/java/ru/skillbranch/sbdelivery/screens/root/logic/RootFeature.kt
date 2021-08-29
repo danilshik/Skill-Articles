@@ -163,6 +163,3 @@ sealed class Command {
 }
 
 
-interface IEffectHandler<E, M> {
-    suspend fun handle(effect: E, commit: (M) -> Unit)
-}
