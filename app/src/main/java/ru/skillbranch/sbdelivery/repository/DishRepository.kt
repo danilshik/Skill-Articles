@@ -29,7 +29,9 @@ class DishRepository @Inject constructor(
     override suspend fun findDish(id: String): DishContent = dishesDao.findDish(id).toDishContent()
 
     override suspend fun addToCart(id: String, count: Int) {
-        cartDao.addItem(CartItemPersist(dishId = id, count = count ));
+        val cartCount = cartDao.dishCount(id) ?: 0
+        if (cartCount > 0) cartDao.updateItemCount(id, cartCount + count)
+        else cartDao.addItem(CartItemPersist(dishId = id, count = count))
     }
 
     override suspend fun cartCount(): Int {
@@ -37,17 +39,21 @@ class DishRepository @Inject constructor(
     }
 
     override suspend fun loadReviews(dishId: String): List<ReviewRes> {
-        val res = api.getFullReviews(dishId,0, 100)
-        return if (res.isSuccessful)
-            res.body()!!.map{it.toReviewRes()}
-        else
-            emptyList()
+        val reviews = mutableListOf<ReviewRes>()
+        var offset = 0
+        while (true) {
+            val res = api.getReviews(dishId, offset * 10, 10)
+            if (res.isSuccessful) {
+                offset++
+                reviews.addAll(res.body()!!)
+            } else break
+        }
+
+        return reviews
     }
 
     override suspend fun sendReview(id: String, rating: Int, review: String): ReviewRes {
-        api.sendReview(id, ReviewReq(rating, review))
-        return ReviewRes("Name", Date().time, rating, review)
-
+        return api.sendReview(id, ReviewReq(rating, review))
     }
 
     override suspend fun setLike(id: String, like: Boolean) {

@@ -39,11 +39,15 @@ fun DishReviews(reviews: ReviewUiState, rating: Float, accept: (DishFeature.Msg)
             modifier = Modifier
                 .fillMaxWidth()
         )
-        ReviewUiState.Empty -> Box(
+        is ReviewUiState.Empty -> Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.height(112.dp)
         ) {
             Text(text = "Отзывов о этом товаре пока нет.\n Но вы можете быть первым")
+        }
+
+        is ReviewUiState.ValueWithLoading -> {
+
         }
     }
 }

@@ -162,4 +162,3 @@ sealed class Command {
     //Android specific commands finish() startForResult, etc
 }
 
-

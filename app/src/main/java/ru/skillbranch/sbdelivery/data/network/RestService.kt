@@ -29,7 +29,7 @@ interface RestService {
     suspend fun getReviews(
         @Path("dishId") dishId: String,
         @Query("offset") offset: Int,
-        @Query("limit") limit: Int
+        @Query("limit") limit: Int=10
     ): Response<List<ReviewRes>>
 
     @GET("reviews/{dishId}")
@@ -40,7 +40,7 @@ interface RestService {
         @Query("limit") limit: Int
     ): Response<List<FullReviewRes>>
 
-    @POST("reviews/{dishId}")
+    @POST("reviews/{dish}")
     @Headers(
         "If-Modified-Since: Mon, 1 Jun 2020 08:00:00 GMT"
 //        , "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxMDFkMDM2Mjk5YzZhMDAzZTlkZGI5ZiIsImlhdCI6MTYyNzU5MDA2OSwiZXhwIjoxNjI3NTkxMjY5fQ.u8GAAaZkah1G5I4y4U2oULcnfnurAW0f08X0-iiN1pw"
@@ -48,6 +48,7 @@ interface RestService {
     suspend fun sendReview(
         @Path("dishId") dishId: String,
         @Body review: ReviewReq,
+        token: String = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxMGU5N2RmNGUzNDExMDAzY2M2ZTBlZCIsImlhdCI6MTYyODM0NjMzNSwiZXhwIjoxNjI4MzQ3NTM1fQ.JYVPAOxDOmmMJXULJD2MvMpXWdkMxnZ64KVrqP7SEns"
     ): ReviewRes
 
 

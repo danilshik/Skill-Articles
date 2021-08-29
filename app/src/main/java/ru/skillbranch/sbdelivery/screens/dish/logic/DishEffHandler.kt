@@ -24,6 +24,9 @@ class DishEffHandler @Inject constructor(
             when (effect) {
                 is DishFeature.Eff.AddToCart -> {
                     repository.addToCart(effect.id, effect.count)
+                    repository.cartCount()
+                        .let(Msg::UpdateCartCount)
+                        .also(commit)
                     notifyChannel.send(Eff.Notification.Text("В корзмну добавлено ${effect.count} товаров"))
                 }
                 is DishFeature.Eff.LoadDish -> {
@@ -39,11 +42,16 @@ class DishEffHandler @Inject constructor(
                     }
                 }
                 is DishFeature.Eff.SendReview -> {
-                    val res = repository.sendReview(
+                    val review = repository.sendReview(
                         id = effect.id,
                         rating = effect.rating,
                         review = effect.review
                     )
+
+                    repository.loadReviews(effect.id).plus(review)
+                        .let(DishFeature.Msg::ShowReviews)
+                        .let(Msg::Dish)
+                        .also(commit)
                     notifyChannel.send(Eff.Notification.Text("Отзыв успешно отправлен"))
                 }
                 is DishFeature.Eff.SetLike -> {

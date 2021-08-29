@@ -27,6 +27,8 @@ import coil.compose.rememberImagePainter
 import ru.skillbranch.sbdelivery.R
 import ru.skillbranch.sbdelivery.screens.dish.logic.DishFeature
 import ru.skillbranch.sbdelivery.screens.dish.data.DishContent
+import ru.skillbranch.sbdelivery.screens.root.logic.Msg
+import ru.skillbranch.sbdelivery.screens.root.logic.Msg.Dish
 import ru.skillbranch.sbdelivery.screens.root.ui.AppTheme
 
 @ExperimentalCoilApi
@@ -127,7 +129,11 @@ fun DishContent(dish: DishContent, count: Int, isLiked: Boolean, accept: (DishFe
                 })
 
         TextButton(
-            onClick = { accept(DishFeature.Msg.AddToCart(dish.id, count)) },
+            onClick = {
+                DishFeature.Msg.AddToCart(dish.id, count)
+//                    .let(Msg::Dish)
+//                    .also(accept)
+            },
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = MaterialTheme.colors.secondary,
                 contentColor = MaterialTheme.colors.onSecondary
