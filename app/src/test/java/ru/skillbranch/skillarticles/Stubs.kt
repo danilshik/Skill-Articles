@@ -7,7 +7,6 @@ import ru.skillbranch.sbdelivery.data.toCartItem
 import ru.skillbranch.sbdelivery.data.toDishContent
 import ru.skillbranch.sbdelivery.data.toDishItem
 import ru.skillbranch.sbdelivery.data.toDishPersist
-import ru.skillbranch.sbdelivery.screens.cart.data.CartItem
 import java.util.*
 
 object Stubs {

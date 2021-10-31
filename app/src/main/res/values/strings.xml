@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">SBDelivery</string>
+    <string name="app_name">sbdelivery</string>
+    <string name="menu_dishes">Меню</string>
+    <string name="search_title">Поиск</string>
+    <string name="search_dishes_hint">Поиск блюд</string>
+    <string name="btn_retry_error">Повторить</string>
+    <string name="basket_title">Корзина</string>
+    <string name="dishes_title">Все блюда</string>
+    <string name="dish_title">Блюдо</string>
 </resources>
