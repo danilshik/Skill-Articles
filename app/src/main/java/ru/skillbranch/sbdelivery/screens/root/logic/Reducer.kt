@@ -2,55 +2,103 @@ package ru.skillbranch.sbdelivery.screens.root.logic
 
 import ru.skillbranch.sbdelivery.screens.cart.logic.CartFeature
 import ru.skillbranch.sbdelivery.screens.dish.logic.DishFeature
+import ru.skillbranch.sbdelivery.screens.dishes.logic.DishesFeature
+import ru.skillbranch.sbdelivery.screens.dishes.logic.DishesState
+import ru.skillbranch.sbdelivery.screens.favorites.logic.FavoriteFeature
+import ru.skillbranch.sbdelivery.screens.home.logic.HomeFeature
+import ru.skillbranch.sbdelivery.screens.menu.logic.MenuFeature
+import java.lang.IllegalStateException
 
-fun RootState.reduceNavigate(msg: NavigateCommand): Pair<RootState, Set<Eff>> {
-
-    val navEffs : Set<Eff> = when(current){
-        is ScreenState.Dish -> setOf(Eff.Dish(DishFeature.Eff.Terminate))
-        else -> emptySet()
-    }
+fun RootState.reduceNavigate(
+    msg: NavCmd
+): Pair<RootState, Set<Eff>> {
+    val navEff = Eff.Terminate(currentRoute)
 
     return when (msg) {
-        is NavigateCommand.ToBack -> {
+        is NavCmd.Back -> {
             val newBackstack = backstack.dropLast(1)
-            val newScreen = backstack.lastOrNull()
+            val newScreen: ScreenState? = backstack.lastOrNull()
             if (newScreen == null) this to setOf(Eff.Cmd(Command.Finish))
             else {
-                val newScreens = screens.toMutableMap()
-                    .also { mutableScreens -> mutableScreens[newScreen.route] = newScreen }
+                val newList = screens.toMutableMap()
+                    .also { screens -> screens[newScreen.route] = newScreen }
+
                 copy(
-                    screens = newScreens,
+                    screens = newList,
                     backstack = newBackstack,
                     currentRoute = newScreen.route
-                ) to emptySet()
+                ) to newScreen.initialEffects()
             }
         }
 
-        is NavigateCommand.ToCart -> {
-            //return if on cart screen (single top)
-            if(current.route === CartFeature.route) return this to emptySet()
-            val newBackstack = backstack.plus(current)
-            var newState = copy(currentRoute = CartFeature.route, backstack = newBackstack)
-            newState = newState.changeCurrentScreen<ScreenState.Cart> {
+        NavCmd.ToCart -> {
+            val newState = screenStateFactory<ScreenState.Cart>(CartFeature.route) {
                 copy(state = CartFeature.initialState())
             }
-            val newEffs = CartFeature.initialEffects().mapTo(HashSet(), Eff::Cart)
-            newState to newEffs
+            newState to newState.current.initialEffects()
         }
 
-        is NavigateCommand.ToDishItem -> {
-            val newBackstack = backstack.plus(current)
-            var newState = copy(currentRoute = DishFeature.route, backstack = newBackstack)
-            newState = newState.changeCurrentScreen<ScreenState.Dish> {
-                copy(
-                    state = DishFeature.State(
-                        id = msg.id,
-                        title = msg.title
-                    )
-                )
+        is NavCmd.ToCategory -> {
+            val newState = screenStateFactory<ScreenState.Dishes>(DishesFeature.route) {
+                copy(state = DishesFeature.initialState(title = msg.title, category = msg.id))
             }
-            val newEffs = DishFeature.initialEffects(msg.id).mapTo(HashSet(), Eff::Dish)
-            newState to newEffs
+            val newEff = DishesFeature.initialEffects(msg.id)
+                .mapTo(HashSet(), Eff::Dishes)
+
+            newState to newEff
         }
-    }.run { first to second.plus(navEffs) }
+
+        is NavCmd.ToDishItem -> {
+            val newState = screenStateFactory<ScreenState.Dish>(DishFeature.route) {
+                copy(state = DishFeature.initialState(id = msg.id, title = msg.title))
+            }
+            newState to newState.current.initialEffects()
+        }
+
+        is NavCmd.To -> {
+            val newBackstack = backstack.plus(current)
+            val newState = copy(currentRoute = msg.route, backstack = newBackstack)
+
+            when (msg.route) {
+                HomeFeature.route -> {
+                    newState.changeCurrentScreen<ScreenState.Home> {
+                        copy(state = HomeFeature.initialState())
+                    }
+                }
+                MenuFeature.route -> {
+                    newState.changeCurrentScreen<ScreenState.Menu> {
+                        copy(state = MenuFeature.initialState())
+                    }
+                }
+
+                FavoriteFeature.route -> {
+                    newState.changeCurrentScreen<ScreenState.Favorites> {
+                        copy(state = FavoriteFeature.initialState())
+                    }
+                }
+
+                "about" -> {
+                    newState.changeCurrentScreen<ScreenState.About> {
+                        copy(state=Unit)
+                    }
+
+                }
+
+
+                else -> throw IllegalStateException("not found navigation for route ${msg.route}")
+            }
+
+            newState to newState.current.initialEffects()
+        }
+
+
+    }.run { first to second.plus(navEff)}
+
+
+}
+
+fun <T : ScreenState> RootState.screenStateFactory(route: String, block: T.() -> T): RootState {
+    val newBackstack = backstack.plus(current)
+    val newState = copy(currentRoute = route, backstack = newBackstack)
+    return newState.changeCurrentScreen(block)
 }

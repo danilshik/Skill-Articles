@@ -25,18 +25,20 @@ import ru.skillbranch.sbdelivery.screens.dish.data.DishUiState
 import ru.skillbranch.sbdelivery.screens.root.ui.AppTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import coil.annotation.ExperimentalCoilApi
+import ru.skillbranch.sbdelivery.screens.root.logic.Msg
 
+@ExperimentalCoilApi
 @ExperimentalFoundationApi
 @ExperimentalComposeUiApi
 @Composable
-fun DishScreen(state: DishFeature.State, accept: (DishFeature.Msg) -> Unit) {
+fun DishScreen(state: DishFeature.State, accept: (Msg) -> Unit) {
     when (state.content) {
         is DishUiState.Value -> {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                DishContent(dish = state.content.data, isLiked = state.isLiked, count = state.count, accept = accept)
-                DishReviews(reviews = state.reviews, rating = state.rating, accept = accept)
+                DishContent(dish = state.content.data, accept, state.count)
+                DishReviews(reviews = state.reviews, rating = state.content.data.rating, { accept(Msg.Dish(it)) })
             }
-
         }
 
         is DishUiState.Loading -> Box(
@@ -48,7 +50,7 @@ fun DishScreen(state: DishFeature.State, accept: (DishFeature.Msg) -> Unit) {
 
     }
 
-    if (state.isReviewDialog) ReviewDialog(state.id, accept)
+    if (state.isReviewDialog) ReviewDialog(state.id, { accept(Msg.Dish(it)) })
 }
 
 @Composable

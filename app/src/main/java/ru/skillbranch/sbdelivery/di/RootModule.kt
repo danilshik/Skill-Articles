@@ -5,26 +5,25 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ViewModelComponent
 import dagger.hilt.android.scopes.ViewModelScoped
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import ru.skillbranch.sbdelivery.screens.root.logic.Command
 import ru.skillbranch.sbdelivery.screens.root.logic.Eff
-import kotlin.reflect.jvm.internal.impl.load.java.JavaClassesTracker
+
 
 @InstallIn(ViewModelComponent::class)
 @Module
 object RootModule {
-    @ViewModelScoped
-    @Provides
-    fun provideNotificationChannel() : Channel<Eff.Notification> = Channel()
 
     @ViewModelScoped
     @Provides
-    fun provideCmdChannel() : Channel<Command> = Channel()
-
+    fun provideCommandChanel() : Channel<Command> = Channel()
 
     @ViewModelScoped
     @Provides
-    fun provideDispatcher() : CoroutineDispatcher = Dispatchers.Default
+    fun provideNotificationChanel() : Channel<Eff.Notification> = Channel()
+
+    @Provides
+    fun provideJob(): Job = SupervisorJob()
 }

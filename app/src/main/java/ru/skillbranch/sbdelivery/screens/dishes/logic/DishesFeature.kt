@@ -1,45 +1,46 @@
 package ru.skillbranch.sbdelivery.screens.dishes.logic
 
-import ru.skillbranch.sbdelivery.screens.dishes.data.DishItem
+import ru.skillbranch.sbdelivery.domain.DishItem
 import ru.skillbranch.sbdelivery.screens.dishes.data.DishesUiState
 import java.io.Serializable
 
+
 object DishesFeature {
-    fun initialState(): State  = State()
-    fun initialEffects(): Set<Eff>  = setOf(Eff.SyncDishes)
+    const val route: String = "dishes"
 
-    val route: String = "dishes"
+    fun initialState(title: String, category: String): DishesState =
+        DishesState(title = title, category = category)
 
-    data class State(
-        val input:String = "",
-        val isSearch:Boolean = false,
-        val suggestions: Map<String, Int> = emptyMap(),
-        val list: DishesUiState = DishesUiState.Loading
-    ): Serializable
+    fun initialEffects(category: String): Set<Eff> = setOf<Eff>(Eff.FindDishes(category))
 
-    sealed class Msg{
-        data class SearchInput(val newInput:String) : Msg()
-        data class ShowDishes(val dishes:List<DishItem>):Msg()
-        data class SearchSubmit(val query:String):Msg()
-        data class ClickDish(val id:String, val title:String) : Msg()
-        data class AddToCart(val id:String, val title:String) : Msg()
-        data class RemoveFromCart(val id:String, val title:String) : Msg()
-        data class UpdateSuggestionResult( val query:String) : Msg()
-        data class ShowSuggestions( val suggestions:Map<String, Int>) : Msg()
-        data class SuggestionSelect( val suggestion : String) : Msg()
-
-        object SearchToggle: Msg()
-        object ShowError: Msg()
-        object ShowLoading: Msg()
+    sealed class Eff {
+        data class FindDishes(val category: String) : Eff()
+        data class SearchDishes(val category: String, val query: String) : Eff()
+        data class FindSuggestions(val category: String, val query: String) : Eff()
     }
 
-    sealed class Eff{
-        data class SearchDishes(val query:String):Eff()
-        data class AddToCart(val id:String, val title:String) : Eff()
-        data class RemoveFromCart(val id:String, val title:String) : Eff()
-        data class FindSuggestions(val query:String) : Eff()
+}
 
-        object SyncDishes : Eff()
-        object FindAllDishes : Eff()
-    }
+
+data class DishesState(
+    val category: String = "",
+    val title: String = "",
+    val input: String = "",
+    val isSearch: Boolean = false,
+    val suggestions: Map<String, Int> = emptyMap(),
+    val list: DishesUiState = DishesUiState.Loading,
+
+    ) : Serializable
+
+sealed class DishesMsg {
+    data class SearchInput(val newInput: String) : DishesMsg()
+    data class ShowDishes(val dishes: List<DishItem>) : DishesMsg()
+    data class SearchSubmit(val query: String) : DishesMsg()
+    data class UpdateSuggestionResult(val query: String) : DishesMsg()
+    data class ShowSuggestion(val sug: Map<String, Int>) : DishesMsg()
+    data class SuggestionSelect(val it: String) : DishesMsg()
+
+    object SearchToggle : DishesMsg()
+    object ConnectionFailed : DishesMsg()
+    object ShowLoading : DishesMsg()
 }

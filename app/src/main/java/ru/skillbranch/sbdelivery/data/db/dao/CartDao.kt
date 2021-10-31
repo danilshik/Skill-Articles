@@ -4,13 +4,17 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import ru.skillbranch.sbdelivery.data.db.entity.CartItemDbView
+import kotlinx.coroutines.flow.Flow
+import ru.skillbranch.sbdelivery.data.db.entity.CartItemDV
 import ru.skillbranch.sbdelivery.data.db.entity.CartItemPersist
 
 @Dao
 interface CartDao {
-    @Query("SELECT * FROM CartItemDbView")
-    suspend fun findCartItems(): List<CartItemDbView>
+    @Query("SELECT * FROM CartItemDV")
+    fun findCartItems(): Flow<List<CartItemDV>>
+
+    @Query("SELECT SUM(count) FROM cart_items")
+    fun cartCountFlow(): Flow<Int?>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun addItem(item: CartItemPersist)
@@ -35,6 +39,4 @@ interface CartDao {
 
     @Query("SELECT SUM(count) FROM cart_items")
     suspend fun cartCount(): Int?
-
-
 }

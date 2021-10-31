@@ -2,6 +2,7 @@ package ru.skillbranch.sbdelivery.screens.dish.ui
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,10 +12,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -24,87 +27,93 @@ import androidx.constraintlayout.compose.Dimension
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.ImagePainter
 import coil.compose.rememberImagePainter
+import coil.size.Scale
 import ru.skillbranch.sbdelivery.R
+import ru.skillbranch.sbdelivery.data.db.entity.DishDV
+import ru.skillbranch.sbdelivery.domain.Dish
 import ru.skillbranch.sbdelivery.screens.dish.logic.DishFeature
-import ru.skillbranch.sbdelivery.screens.dish.data.DishContent
 import ru.skillbranch.sbdelivery.screens.root.logic.Msg
-import ru.skillbranch.sbdelivery.screens.root.logic.Msg.Dish
 import ru.skillbranch.sbdelivery.screens.root.ui.AppTheme
 
 @ExperimentalCoilApi
 @Composable
-fun DishContent(dish: DishContent, count: Int, isLiked: Boolean, accept: (DishFeature.Msg) -> Unit) {
+fun DishContent(dish: Dish, accept: (Msg) -> Unit, count: Int) {
     ConstraintLayout {
 
-        val (title, poster, likeBtn, description, price, addBtn) = createRefs()
-
+        val (title, poster, description, price, addBtn, favorite, sale) = createRefs()
         val painter = rememberImagePainter(
             data = dish.image,
             builder = {
                 crossfade(true)
                 placeholder(R.drawable.img_empty_place_holder)
                 error(R.drawable.img_empty_place_holder)
+                scale(Scale.FILL)
             }
         )
         Image(
-            painter  = painter,
-            contentDescription = "My content description",
-            contentScale = ContentScale.Crop,
+            painter = painter,
+            contentDescription = dish.title,
+            contentScale = if (painter.state is ImagePainter.State.Success) ContentScale.Crop else ContentScale.Inside,
             modifier = Modifier
-                .aspectRatio(1.44f)
-                .fillMaxSize()
+                .fillMaxWidth()
                 .constrainAs(poster) {
+                    width = Dimension.fillToConstraints
                     top.linkTo(parent.top)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 }
-                .clip(RoundedCornerShape(8.dp))
-        )
+                .aspectRatio(1.44f)
 
+        )
         IconButton(
-            onClick = { accept(DishFeature.Msg.ToggleLike) },
+            onClick = { accept(Msg.ToggleLike(dish.id, !dish.isFavorite)) },
+            modifier = Modifier.constrainAs(favorite) {
+                top.linkTo(parent.top, margin = 8.dp)
+                end.linkTo(parent.end)
+            },
             content = {
                 Icon(
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colors.secondary,
-                    painter = painterResource( if (isLiked) R.drawable.ic_baseline_star_24 else R.drawable.ic_baseline_star_border_24),
-                    contentDescription = null
+                    tint = if (dish.isFavorite) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.onPrimary,
+                    painter = painterResource(R.drawable.ic_favorite),
+                    contentDescription = "is favorite"
                 )
-            },
-            modifier = Modifier
-                .width(30.dp)
-                .height(30.dp)
-                .border(
-                    0.dp,
-                    MaterialTheme.colors.onBackground
+            })
+        if (dish.oldPrice != null) {
+            Box(contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(74.dp, 24.dp)
+                    .background(
+                        color = MaterialTheme.colors.secondaryVariant,
+                        RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
+                    )
+                    .constrainAs(sale) {
+                        top.linkTo(parent.top, margin = 16.dp)
+                        start.linkTo(parent.start)
+                    }) {
+                Text(
+                    text = "АКЦИЯ",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    color = Color.Black,
                 )
-                .constrainAs(likeBtn) {
-                    top.linkTo(poster.top, margin = 16.dp)
-                    end.linkTo(parent.end, margin = 16.dp)
-                }
-               .clipToBounds()
-        )
+            }
 
+        }
         Text(
-            fontSize = 24.sp,
-            color = MaterialTheme.colors.onPrimary,
-            style = TextStyle(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.h5,
             text = dish.title,
             modifier = Modifier
-                .fillMaxWidth()
                 .constrainAs(title) {
+                    width = Dimension.fillToConstraints
                     top.linkTo(poster.bottom, margin = 16.dp)
                     start.linkTo(parent.start, margin = 16.dp)
                     end.linkTo(parent.end, margin = 16.dp)
-                    width = Dimension.preferredWrapContent
                 }
 
         )
         Text(
-            fontSize = 14.sp,
-            color = MaterialTheme.colors.onBackground,
             text = dish.description,
-            style = TextStyle(fontWeight = FontWeight.ExtraLight),
+            style = MaterialTheme.typography.body1,
             modifier = Modifier
                 .fillMaxWidth()
                 .constrainAs(description) {
@@ -118,8 +127,16 @@ fun DishContent(dish: DishContent, count: Int, isLiked: Boolean, accept: (DishFe
 
         DishPrice(price = dish.price, oldPrice = dish.oldPrice,
             count = count,
-            onIncrement = { accept(DishFeature.Msg.IncrementCount) },
-            onDecrement = { accept(DishFeature.Msg.DecrementCount) },
+            onIncrement = {
+                DishFeature.Msg.IncrementCount
+                    .let(Msg::Dish)
+                    .also(accept)
+            },
+            onDecrement = {
+                DishFeature.Msg.DecrementCount
+                    .let(Msg::Dish)
+                    .also(accept)
+            },
             modifier = Modifier
                 .padding(start = 16.dp, end = 16.dp)
                 .constrainAs(price) {
@@ -131,8 +148,8 @@ fun DishContent(dish: DishContent, count: Int, isLiked: Boolean, accept: (DishFe
         TextButton(
             onClick = {
                 DishFeature.Msg.AddToCart(dish.id, count)
-//                    .let(Msg::Dish)
-//                    .also(accept)
+                    .let(Msg::Dish)
+                    .also(accept)
             },
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = MaterialTheme.colors.secondary,
@@ -276,7 +293,7 @@ fun StepperPreview() {
 @Composable
 fun PricePreview() {
     AppTheme {
-        DishPrice(60, oldPrice =100, count=5, onDecrement = {}, onIncrement = {})
+        DishPrice(60, oldPrice = 100, count = 5, onDecrement = {}, onIncrement = {})
     }
 }
 
@@ -285,17 +302,19 @@ fun PricePreview() {
 fun ContentPreview() {
     AppTheme {
         DishContent(
-            dish = DishContent(
-                "0",
-                "https://www.delivery-club.ru/media/cms/relation_product/32350/312372888_m650.jpg",
-                "Бургер \"Америка\"",
-                "320 г • Котлета из 100% говядины (прожарка medium) на гриле, картофельная булочка на гриле, фирменный соус, лист салата, томат, маринованный лук, жареный бекон, сыр чеддер.",
-                100,
-                200
+            dish = Dish(
+                id = "0",
+                image = "https://www.delivery-club.ru/media/cms/relation_product/32350/312372888_m650.jpg",
+                title = "Бургер \"Америка\"",
+                description = "320 г • Котлета из 100% говядины (прожарка medium) на гриле, картофельная булочка на гриле, фирменный соус, лист салата, томат, маринованный лук, жареный бекон, сыр чеддер.",
+                price = 100,
+                oldPrice = 200,
+                rating = 5f,
+                isFavorite = false,
             ),
-            isLiked = false,
+            accept = {},
             count = 5
-        ) {}
+        )
     }
 }
 

@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import ru.skillbranch.sbdelivery.data.db.AppDb
 import ru.skillbranch.sbdelivery.data.db.dao.CartDao
+import ru.skillbranch.sbdelivery.data.db.dao.CategoriesDao
 import ru.skillbranch.sbdelivery.data.db.dao.DishesDao
 import javax.inject.Singleton
 
@@ -25,9 +26,13 @@ object DbModule {
 
     @Provides
     @Singleton
-    fun provideArticlesDao(db: AppDb): DishesDao = db.dishesDao()
+    fun provideDishesDao(db: AppDb): DishesDao = db.dishesDao()
 
     @Provides
     @Singleton
     fun provideCartDao(db: AppDb): CartDao = db.cartDao()
+
+    @Provides
+    @Singleton
+    fun provideCategoryDao(db: AppDb): CategoriesDao = db.categoryDao()
 }

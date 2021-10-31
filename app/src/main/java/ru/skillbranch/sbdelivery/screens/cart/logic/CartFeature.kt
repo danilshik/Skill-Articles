@@ -1,22 +1,21 @@
 package ru.skillbranch.sbdelivery.screens.cart.logic
 
-import ru.skillbranch.sbdelivery.screens.cart.data.CartItem
+import ru.skillbranch.sbdelivery.domain.CartItem
 import ru.skillbranch.sbdelivery.screens.cart.data.CartUiState
 import ru.skillbranch.sbdelivery.screens.cart.data.ConfirmDialogState
 import java.io.Serializable
 
 object CartFeature {
+    fun initialState(): State  = State()
+    fun initialEffects(): Set<Eff> = setOf(Eff.LoadCart)
 
-    val route = "cart"
-
-    fun initialState() : State = State()
-    fun initialEffects() : Set<Eff> = setOf(Eff.LoadCart)
+    const val route:String = "cart"
 
     data class State(
-        val promo: String = "",
+        val promo:String ="",
         val confirmDialog: ConfirmDialogState = ConfirmDialogState.Hide,
         val list: CartUiState = CartUiState.Empty
-    ): Serializable
+    ) : Serializable
 
     sealed class Eff{
         object LoadCart: Eff()
@@ -36,4 +35,5 @@ object CartFeature {
         data class RemoveFromCart(val dishId: String) :Msg()
         data class ClickOnDish(val dishId: String, val title: String) :Msg()
     }
+
 }

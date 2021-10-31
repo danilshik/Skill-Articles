@@ -1,52 +1,53 @@
 package ru.skillbranch.sbdelivery.screens.cart.logic
 
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import ru.skillbranch.sbdelivery.repository.CartRepository
 import ru.skillbranch.sbdelivery.screens.root.logic.Eff
 import ru.skillbranch.sbdelivery.screens.root.logic.IEffectHandler
 import ru.skillbranch.sbdelivery.screens.root.logic.Msg
 import javax.inject.Inject
+import kotlin.coroutines.coroutineContext
 
 class CartEffHandler @Inject constructor(
-    private val repository: CartRepository,
-    private val notifyChannel: Channel<Eff.Notification>,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.Default
+    val repository: CartRepository,
+    private val notifyChanel: Channel<Eff.Notification>,
+    override var localJob: Job
 ) : IEffectHandler<CartFeature.Eff, Msg> {
-    override suspend fun handle(effect: CartFeature.Eff, commit: (Msg) -> Unit) {
 
-        suspend fun updateCart(){
-            val items = repository.loadItems()
-            val count = items.sumBy { it.count }
-            commit(Msg.UpdateCartCount(count))
-            commit(CartFeature.Msg.ShowCart(items).toMsg())
-        }
+    private val errHandler = CoroutineExceptionHandler{_, t ->
+        t.printStackTrace()
+        t.message?.let { notifyChanel.trySend(Eff.Notification.Error(it)) }
+    }
 
-        when(effect){
-            is CartFeature.Eff.DecrementItem -> {
-                repository.decrementItem(effect.dishId)
-                updateCart()
-            }
-            is CartFeature.Eff.IncrementItem -> {
-                repository.incrementItem(effect.dishId)
-                updateCart()
-            }
-            is CartFeature.Eff.LoadCart -> {
-                val items = repository.loadItems()
-                commit(CartFeature.Msg.ShowCart(items).toMsg())
-            }
-            is CartFeature.Eff.RemoveItem -> {
-                repository.removeItem(effect.dishId)
-                updateCart()
-            }
-            is CartFeature.Eff.SendOrder -> {
-                repository.clearCart()
-                notifyChannel.send(Eff.Notification.Text("Заказ оформлен"))
-                updateCart()
+    override suspend fun handle(eff: CartFeature.Eff, commit: (Msg) -> Unit) {
+        CoroutineScope(coroutineContext + localJob + errHandler).launch {
+
+            when (eff) {
+                is CartFeature.Eff.LoadCart -> {
+
+//                    val cart = repository.loadItems()         //suspend load items
+//                    val msg = CartFeature.Msg.ShowCart(cart)  //items transform to CartFeature.Msg
+//                    val rootMsg  = Msg.Cart(msg)              //transform local msg to Msg.Cart - root msg
+//                    commit(rootMsg)                           //commit state changes
+
+                    repository.loadItems()                      //load flow
+                        .map(CartFeature.Msg::ShowCart)         //items transform to CartFeature.Msg
+                        .map (Msg::Cart)                        //transform local msg to Msg.Cart - root msg
+                        .collect { commit(it) }                 //commit state changes
+                }
+
+                is CartFeature.Eff.DecrementItem -> repository.decrementItem(eff.dishId)
+                is CartFeature.Eff.IncrementItem -> repository.incrementItem(eff.dishId)
+                is CartFeature.Eff.RemoveItem -> repository.removeItem(eff.dishId)
+                is CartFeature.Eff.SendOrder -> {
+                    repository.clearCart()
+                    notifyChanel.send(Eff.Notification.Text("Заказ оформлен"))
+                }
             }
         }
     }
-
-    private fun CartFeature.Msg.toMsg(): Msg = Msg.Cart(this)
 }

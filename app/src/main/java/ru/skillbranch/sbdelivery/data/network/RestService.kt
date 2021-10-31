@@ -17,39 +17,35 @@ interface RestService {
         @Query("limit") limit: Int
     ): Response<List<DishRes>>
 
+    @GET("dishes/{id}")
+    @Headers("If-Modified-Since: Mon, 1 Jun 2020 08:00:00 GMT")
+    suspend fun getDish(
+        @Path("id") id: String,
+    ): Response<DishRes>
+
+    @GET("main/recommend")
+    suspend fun getRecommended(): Response<List<String>>
+
     @GET("categories")
     @Headers("If-Modified-Since: Mon, 1 Jun 2020 08:00:00 GMT")
     suspend fun getCategories(
-        @Query("offset") offset: Int,
-        @Query("limit") limit: Int
+        @Query("offset") offset: Int = 0,
+        @Query("limit") limit: Int = 100
     ): List<CategoryRes>
 
-    @GET("reviews/{dishId}")
+    @GET("reviews/{dish}")
     @Headers("If-Modified-Since: Mon, 1 Jun 2020 08:00:00 GMT")
     suspend fun getReviews(
-        @Path("dishId") dishId: String,
-        @Query("offset") offset: Int,
+        @Path("dish") dish:String,
+        @Query("offset") offset: Int=0,
         @Query("limit") limit: Int=10
     ): Response<List<ReviewRes>>
 
-    @GET("reviews/{dishId}")
-    @Headers("If-Modified-Since: Mon, 1 Jun 2020 08:00:00 GMT")
-    suspend fun getFullReviews(
-        @Path("dishId") dishId: String,
-        @Query("offset") offset: Int,
-        @Query("limit") limit: Int
-    ): Response<List<FullReviewRes>>
-
     @POST("reviews/{dish}")
-    @Headers(
-        "If-Modified-Since: Mon, 1 Jun 2020 08:00:00 GMT"
-//        , "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxMDFkMDM2Mjk5YzZhMDAzZTlkZGI5ZiIsImlhdCI6MTYyNzU5MDA2OSwiZXhwIjoxNjI3NTkxMjY5fQ.u8GAAaZkah1G5I4y4U2oULcnfnurAW0f08X0-iiN1pw"
-    )
+    @Headers("If-Modified-Since: Mon, 1 Jun 2020 08:00:00 GMT")
     suspend fun sendReview(
-        @Path("dishId") dishId: String,
-        @Body review: ReviewReq,
+        @Path("dish") dish:String,
+        @Body review : ReviewReq,
         token: String = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxMGU5N2RmNGUzNDExMDAzY2M2ZTBlZCIsImlhdCI6MTYyODM0NjMzNSwiZXhwIjoxNjI4MzQ3NTM1fQ.JYVPAOxDOmmMJXULJD2MvMpXWdkMxnZ64KVrqP7SEns"
     ): ReviewRes
-
-
 }

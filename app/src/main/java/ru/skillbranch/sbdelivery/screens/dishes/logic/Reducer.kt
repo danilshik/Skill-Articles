@@ -1,69 +1,53 @@
 package ru.skillbranch.sbdelivery.screens.dishes.logic
 
 import ru.skillbranch.sbdelivery.screens.dishes.data.DishesUiState
-import ru.skillbranch.sbdelivery.screens.dishes.logic.DishesFeature
 import ru.skillbranch.sbdelivery.screens.root.logic.Eff
-import ru.skillbranch.sbdelivery.screens.root.logic.NavigateCommand
 import ru.skillbranch.sbdelivery.screens.root.logic.RootState
 import ru.skillbranch.sbdelivery.screens.root.logic.ScreenState
 
-fun DishesFeature.State.selfReduce(msg: DishesFeature.Msg): Pair<DishesFeature.State, Set<Eff>> =
-    when (msg) {
-        is DishesFeature.Msg.AddToCart -> this to setOf(
-            DishesFeature.Eff.AddToCart(
-                msg.id,
-                msg.title
-            )
-        ).toEffs()
-        is DishesFeature.Msg.RemoveFromCart -> this to setOf(
-            DishesFeature.Eff.RemoveFromCart(
-                msg.id,
-                msg.title
-            )
-        ).toEffs()
 
-        is DishesFeature.Msg.ClickDish -> copy(
-            isSearch = false,
-            suggestions = emptyMap(),
-            input = ""
-        ) to setOf(
-            Eff.Navigate(NavigateCommand.ToDishItem(msg.id, msg.title))
-        )
-
-        is DishesFeature.Msg.SearchInput -> copy(input = msg.newInput) to emptySet()
-
-        is DishesFeature.Msg.SearchSubmit -> copy(list = DishesUiState.Loading) to setOf(
-            DishesFeature.Eff.SearchDishes(msg.query)
-        ).toEffs()
-
-        is DishesFeature.Msg.SearchToggle -> when {
-            input.isNotEmpty() && isSearch -> copy(input = "", suggestions = emptyMap()) to setOf(
-                DishesFeature.Eff.FindAllDishes
-            ).toEffs()
-            input.isEmpty() && !isSearch -> copy(isSearch = true) to emptySet()
-            else -> copy(isSearch = false, suggestions = emptyMap()) to emptySet()
-        }
-
-        is DishesFeature.Msg.ShowDishes -> {
-            val dishes =
-                if (msg.dishes.isEmpty()) DishesUiState.Empty else DishesUiState.Value(msg.dishes)
-            copy(list = dishes, suggestions = emptyMap()) to emptySet()
-        }
-        is DishesFeature.Msg.ShowError -> copy(list = DishesUiState.Error) to emptySet()
-        is DishesFeature.Msg.ShowLoading -> copy(list = DishesUiState.Loading) to emptySet()
-        is DishesFeature.Msg.ShowSuggestions -> copy(suggestions = msg.suggestions) to emptySet()
-
-        is DishesFeature.Msg.SuggestionSelect -> {
-            copy(suggestions = emptyMap(), input = msg.suggestion) to setOf(DishesFeature.Eff.SearchDishes(msg.suggestion)).toEffs()
-        }
-
-        is DishesFeature.Msg.UpdateSuggestionResult -> this to setOf(DishesFeature.Eff.FindSuggestions(msg.query)).toEffs()
-    }
+fun Set<DishesFeature.Eff>.toEffs(): Set<Eff> = mapTo(HashSet(), Eff::Dishes)
 
 
-fun DishesFeature.State.reduce(root: RootState, msg: DishesFeature.Msg): Pair<RootState, Set<Eff>> {
-    val (screenState, eff) = selfReduce(msg)
-    return root.changeCurrentScreen<ScreenState.Dishes> { copy(state = screenState) } to eff
+fun DishesState.reduceCategory(
+    msg: DishesMsg,
+    rootState: RootState
+): Pair<RootState, Set<Eff>> {
+    val (screenState, effs) = selfReduce(msg)
+    return rootState.changeCurrentScreen<ScreenState.Dishes> { copy(state = screenState) } to effs
 }
 
-private fun Set<DishesFeature.Eff>.toEffs(): Set<Eff> = mapTo(HashSet(), Eff::Dishes)
+fun DishesState.selfReduce(msg: DishesMsg): Pair<DishesState, Set<Eff>> =
+    when (msg) {
+        is DishesMsg.SearchInput -> copy(input = msg.newInput) to emptySet()
+        is DishesMsg.SearchSubmit -> copy(list = DishesUiState.Loading) to setOf(
+            DishesFeature.Eff.SearchDishes(category = category, query = msg.query)
+        ).toEffs()
+        is DishesMsg.ConnectionFailed -> copy(list = DishesUiState.Error) to emptySet()
+        is DishesMsg.ShowLoading -> copy(list = DishesUiState.Loading) to emptySet()
+        is DishesMsg.UpdateSuggestionResult -> this to setOf(
+            DishesFeature.Eff.FindSuggestions(category = category, query = msg.query)
+        ).toEffs()
+
+        is DishesMsg.ShowSuggestion -> copy(suggestions = msg.sug) to emptySet()
+        is DishesMsg.SuggestionSelect -> copy(
+            suggestions = emptyMap(),
+            input = msg.it
+        ) to setOf(DishesFeature.Eff.SearchDishes(category = category, query = msg.it)).toEffs()
+
+        is DishesMsg.ShowDishes -> {
+            val dishes = if (msg.dishes.isEmpty()) DishesUiState.Empty
+            else DishesUiState.Value(msg.dishes)
+            copy(list = dishes, suggestions = emptyMap()) to emptySet()
+        }
+
+        is DishesMsg.SearchToggle -> when {
+                input.isNotEmpty() && isSearch -> copy(
+                    input = "",
+                    suggestions = emptyMap()
+                ) to setOf(DishesFeature.Eff.FindDishes(category)).toEffs()
+                input.isEmpty() && !isSearch -> copy(isSearch = true) to emptySet()
+                else -> copy(isSearch = false, suggestions = emptyMap()) to emptySet()
+            }
+    }
+

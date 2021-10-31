@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,6 +33,7 @@ fun DishReviews(reviews: ReviewUiState, rating: Float, accept: (DishFeature.Msg)
         ) {
             CircularProgressIndicator(color = MaterialTheme.colors.secondary)
         }
+
         is ReviewUiState.Value -> Reviews(
             reviews = reviews.list,
             rating = rating,
@@ -39,12 +41,8 @@ fun DishReviews(reviews: ReviewUiState, rating: Float, accept: (DishFeature.Msg)
             modifier = Modifier
                 .fillMaxWidth()
         )
-        is ReviewUiState.Empty -> Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.height(112.dp)
-        ) {
-            Text(text = "Отзывов о этом товаре пока нет.\n Но вы можете быть первым")
-        }
+
+        is ReviewUiState.Empty -> EmptyReviews { accept(DishFeature.Msg.ShowReviewDialog) }
 
         is ReviewUiState.ValueWithLoading -> {
 
@@ -68,9 +66,7 @@ fun Reviews(
         ) {
             Text(
                 "Отзывы",
-                color = MaterialTheme.colors.onPrimary,
-                fontSize = 18.sp,
-                style = TextStyle(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.h6
             )
 
             if (rating > 0) {
@@ -123,9 +119,7 @@ fun ReviewItem(review: ReviewRes, modifier: Modifier = Modifier) {
                 Text(
                     text = "${review.name}, $date",
                     modifier = Modifier.weight(1f),
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colors.onPrimary,
-                    style = TextStyle(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.subtitle2,
                 )
 
                 Row {
@@ -140,9 +134,7 @@ fun ReviewItem(review: ReviewRes, modifier: Modifier = Modifier) {
                 }
             }
             Text(
-                fontSize = 12.sp,
-                color = MaterialTheme.colors.onBackground,
-                style = TextStyle(fontWeight = FontWeight.ExtraLight),
+                style = MaterialTheme.typography.body1,
                 text = review.message,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,11 +144,46 @@ fun ReviewItem(review: ReviewRes, modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
+fun EmptyReviews(modifier: Modifier = Modifier, onShowReviewDialog: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .padding(horizontal = 16.dp, vertical = 32.dp)
+    ) {
+        val lightBgColor = Color(android.graphics.Color.parseColor("#33313B"))
+        Text(
+            text = "Отзывов о этом товаре пока нет.\n Но вы можете быть первым",
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.body1
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        TextButton(
+            onClick = onShowReviewDialog,
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = lightBgColor,
+                contentColor = Color.White
+            ),
+        ) {
+            Text("Добавить отзыв")
+        }
+    }
+}
+
 @Preview
 @Composable
 fun ReviewsPreview() {
     AppTheme {
         Reviews(reviews = emptyList(), rating = 2f, onAddReview = {})
+    }
+}
+
+@Preview
+@Composable
+fun EmptyReviewsPreview() {
+    AppTheme {
+        EmptyReviews() {}
     }
 }
 
